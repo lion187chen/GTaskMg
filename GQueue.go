@@ -7,39 +7,39 @@ import (
 
 type GQueue chan interface{}
 
-func (my *GQueue) Init(size int) *GQueue {
-	*my = make(chan interface{}, size)
-	return my
+func (obj *GQueue) Init(size int) *GQueue {
+	*obj = make(chan interface{}, size)
+	return obj
 }
 
-func (my *GQueue) EnQueueSync(itm interface{}) {
-	*my <- itm
+func (obj *GQueue) EnQueueSync(itm interface{}) {
+	*obj <- itm
 }
 
-func (my *GQueue) EnQueue(itm interface{}, timeout time.Duration) error {
+func (obj *GQueue) EnQueue(itm interface{}, timeout time.Duration) error {
 	select {
-	case *my <- itm:
+	case *obj <- itm:
 		return nil
 	case <-time.After(timeout):
 		return errors.New(ERR_GQUEUE_TIMEOUT)
 	}
 }
 
-func (my *GQueue) DeQueueSync() interface{} {
-	itm := <-*my
+func (obj *GQueue) DeQueueSync() interface{} {
+	itm := <-*obj
 	return itm
 }
 
-func (my *GQueue) DeQueue(timeout time.Duration) (interface{}, error) {
+func (obj *GQueue) DeQueue(timeout time.Duration) (interface{}, error) {
 	var itm interface{}
 	select {
-	case itm = <-*my:
+	case itm = <-*obj:
 		return itm, nil
 	case <-time.After(timeout):
 		return nil, errors.New(ERR_GQUEUE_TIMEOUT)
 	}
 }
 
-func (my *GQueue) Close() {
-	close(*my)
+func (obj *GQueue) Close() {
+	close(*obj)
 }

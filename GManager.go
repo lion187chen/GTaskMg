@@ -23,101 +23,99 @@ const (
 	ERR_GQUEUE_TIMEOUT string = "gqueue timeout"
 )
 
-func (my *GManager) Init() *GManager {
-	my.tasks = make(map[string]*GTask)
-	return my
+func (obj *GManager) Init() *GManager {
+	obj.tasks = make(map[string]*GTask)
+	obj.queues = make(map[string]GQueue)
+	return obj
 }
 
-func (my *GManager) RegistTask(task *GTask, name string) {
-	my.tlock.Lock()
-	defer my.tlock.Unlock()
-	my.tasks[name] = task
+func (obj *GManager) RegistTask(task *GTask, name string) {
+	obj.tlock.Lock()
+	defer obj.tlock.Unlock()
+	obj.tasks[name] = task
 }
 
-func (my *GManager) DeleteTask(name string) {
-	my.tlock.RLock()
-	defer my.tlock.RUnlock()
+func (obj *GManager) DeleteTask(name string) {
+	obj.tlock.RLock()
+	defer obj.tlock.RUnlock()
 
-	_, f := my.tasks[name]
+	_, f := obj.tasks[name]
 	if f {
-		my.DeleteQueue(name)
-		delete(my.tasks, name)
+		obj.DeleteQueue(name)
+		delete(obj.tasks, name)
 	}
 }
 
-func (my *GManager) CreateTask(name string, qsize int) *GTask {
-	t := new(GTask).Init(my, name, qsize)
-	t.GManager = my
-	my.RegistTask(t, name)
-
+func (obj *GManager) CreateTask(name string, qsize int) *GTask {
+	t := new(GTask).Init(obj, name, qsize)
 	return t
 }
 
-func (my *GManager) RegistQueue(queue GQueue, name string) {
-	my.qlock.RLock()
-	defer my.qlock.RUnlock()
-	my.queues[name] = queue
+func (obj *GManager) RegistQueue(queue GQueue, name string) {
+	obj.qlock.RLock()
+	defer obj.qlock.RUnlock()
+	obj.queues[name] = queue
 }
 
-func (my *GManager) DeleteQueue(name string) {
-	my.qlock.RLock()
-	defer my.qlock.RUnlock()
+func (obj *GManager) DeleteQueue(name string) {
+	obj.qlock.RLock()
+	defer obj.qlock.RUnlock()
 
-	q, f := my.queues[name]
+	q, f := obj.queues[name]
 	if f {
 		q.Close()
-		delete(my.queues, name)
+		delete(obj.queues, name)
 	}
 }
 
-func (my *GManager) CreateQueue(name string, qsize int) *GQueue {
+func (obj *GManager) CreateQueue(name string, qsize int) *GQueue {
 	q := new(GQueue)
 	q.Init(qsize)
-	my.RegistQueue(*q, name)
+	obj.RegistQueue(*q, name)
 	return q
 }
 
-func (my *GManager) Enter() {
-	my.WaitGroup.Add(1)
+func (obj *GManager) Enter() {
+	obj.WaitGroup.Add(1)
 }
 
-func (my *GManager) Exit() {
-	my.WaitGroup.Done()
+func (obj *GManager) Exit() {
+	obj.WaitGroup.Done()
 }
 
-func (my *GManager) Join() {
-	my.WaitGroup.Wait()
+func (obj *GManager) Join() {
+	obj.WaitGroup.Wait()
 }
 
-func (my *GManager) Broadcast(event interface{}) {
-	my.tlock.RLock()
-	defer my.tlock.RUnlock()
+func (obj *GManager) Broadcast(event interface{}) {
+	obj.tlock.RLock()
+	defer obj.tlock.RUnlock()
 	// Last to first.
-	for name := range my.tasks {
-		t := my.tasks[name]
+	for name := range obj.tasks {
+		t := obj.tasks[name]
 		t.GQueue.EnQueueSync(event)
 	}
 }
 
-func (my *GManager) BroadcastWithout(event interface{}, without string) {
-	my.tlock.RLock()
-	defer my.tlock.RUnlock()
+func (obj *GManager) BroadcastWithout(event interface{}, without string) {
+	obj.tlock.RLock()
+	defer obj.tlock.RUnlock()
 	// Last to first.
-	for name := range my.tasks {
+	for name := range obj.tasks {
 		if without == name {
 			continue
 		}
-		t := my.tasks[name]
+		t := obj.tasks[name]
 		t.GQueue.EnQueueSync(event)
 	}
 }
 
-func (my *GManager) ReqExit() {
-	my.Broadcast(GMSG_EXIT)
+func (obj *GManager) ReqExit() {
+	obj.Broadcast(GMSG_EXIT)
 }
 
-func (my *GManager) ReqTaskExit(name string) {
-	t, f := my.tasks[name]
+func (obj *GManager) ReqTaskExit(name string) {
+	t, f := obj.tasks[name]
 	if f {
 		t.GQueue.EnQueueSync(GMSG_EXIT)
 	}
@@ -125,29 +123,29 @@ func (my *GManager) ReqTaskExit(name string) {
 
 // 这是一个比较危险的函数，在使用时需要确保对应的任务不会被释放。
 // 如果只是向队列或者任务发生消息，应使用：GManager.EnQueueSync() 或者 GManager.EnQueue()
-func (my *GManager) GetGTask(name string) (*GTask, bool) {
-	my.tlock.RLock()
-	defer my.tlock.RUnlock()
+func (obj *GManager) GetGTask(name string) (*GTask, bool) {
+	obj.tlock.RLock()
+	defer obj.tlock.RUnlock()
 
-	t, f := my.tasks[name]
+	t, f := obj.tasks[name]
 	return t, f
 }
 
 // 这是一个比较危险的函数，在使用时需要确保对应的队列不会被释放，或对通道是否关闭进行检查。
 // 如果只是向队列或者任务发生消息，应使用：GManager.EnQueueSync() 或者 GManager.EnQueue()
-func (my *GManager) GetQueue(name string) (GQueue, bool) {
-	my.qlock.RLock()
-	defer my.qlock.RUnlock()
+func (obj *GManager) GetQueue(name string) (GQueue, bool) {
+	obj.qlock.RLock()
+	defer obj.qlock.RUnlock()
 
-	q, f := my.queues[name]
+	q, f := obj.queues[name]
 	return q, f
 }
 
-func (my *GManager) EnQueueSync(name string, itm interface{}) error {
-	my.qlock.RLock()
-	defer my.qlock.RUnlock()
+func (obj *GManager) EnQueueSync(name string, itm interface{}) error {
+	obj.qlock.RLock()
+	defer obj.qlock.RUnlock()
 
-	q, f := my.queues[name]
+	q, f := obj.queues[name]
 	if !f {
 		return errors.New(ERR_GQUEUE_NOFOUND)
 	}
@@ -155,11 +153,11 @@ func (my *GManager) EnQueueSync(name string, itm interface{}) error {
 	return nil
 }
 
-func (my *GManager) EnQueue(name string, itm interface{}, timeout time.Duration) error {
-	my.qlock.RLock()
-	defer my.qlock.RUnlock()
+func (obj *GManager) EnQueue(name string, itm interface{}, timeout time.Duration) error {
+	obj.qlock.RLock()
+	defer obj.qlock.RUnlock()
 
-	q, f := my.queues[name]
+	q, f := obj.queues[name]
 	if !f {
 		return errors.New(ERR_GQUEUE_NOFOUND)
 	}

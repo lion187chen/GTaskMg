@@ -10,31 +10,33 @@ type GTask struct {
 	*GManager
 }
 
-func (my *GTask) Init(manager *GManager, name string, qsize int) *GTask {
-	my.GManager = manager
-	my.GQueue.Init(qsize)
-	if my.GManager != nil {
+func (obj *GTask) Init(manager *GManager, name string, qsize int) *GTask {
+	obj.GManager = manager
+	obj.GQueue.Init(qsize)
+	if obj.GManager != nil {
+		// 注册 Task。
+		obj.GManager.RegistTask(obj, name)
 		// 注册默认队列。
-		my.GManager.RegistQueue(my.GQueue, name)
-		return my
+		obj.GManager.RegistQueue(obj.GQueue, name)
+		return obj
 	}
 	return nil
 }
 
-func (my *GTask) Enter() {
-	if my.GManager != nil {
-		my.GManager.Enter()
+func (obj *GTask) Enter() {
+	if obj.GManager != nil {
+		obj.GManager.Enter()
 	}
-	my.WaitGroup.Add(1)
+	obj.WaitGroup.Add(1)
 }
 
-func (my *GTask) Exit() {
-	my.WaitGroup.Done()
-	if my.GManager != nil {
-		my.GManager.Exit()
+func (obj *GTask) Exit() {
+	obj.WaitGroup.Done()
+	if obj.GManager != nil {
+		obj.GManager.Exit()
 	}
 }
 
-func (my *GTask) Join() {
-	my.WaitGroup.Wait()
+func (obj *GTask) Join() {
+	obj.WaitGroup.Wait()
 }
