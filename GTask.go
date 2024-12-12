@@ -27,7 +27,7 @@ func (obj *GTask) Init(runner interface{}, name string, manager *GManager, qsize
 	return nil
 }
 
-func (obj *GTask) CallRunner() interface{} {
+func (obj *GTask) Run() interface{} {
 	obj.Enter()
 	return obj.runner
 }
