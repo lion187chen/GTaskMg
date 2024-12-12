@@ -6,8 +6,8 @@ A Goroutine and Channel Management System.
 package main
 
 import (
-    "flag"
     "fmt"
+    "time"
 
     gtask "github.com/lion187chen/gTaskMg"
 )
@@ -23,18 +23,23 @@ func main() {
     Core.GManager = new(gtask.GManager).Init()
     Core.GTask = Core.CreateTask(Core.demoTask, "Demo.Task", 16)
 
-    Core.GManager.EnQueueSync("Demo.Task", "Message")                   // Send message to named queue
-    Core.GTask.GQueue.EnQueue(gtask.GMSG_EXIT, 100*time.Millisecond)    // OR use my.GQueue
-    go Core.Run().(func(string))("Hello")
+    Core.GManager.EnQueueSync("Demo.Task", "Message 0")          // Send message to a named queue
+    Core.GTask.GQueue.EnQueue("Message 1", 100*time.Millisecond) // OR use my.GQueue
+    Core.GManager.BroadcastWithout("Message 2", "Demo.Task")
+    Core.GManager.Broadcast(gtask.GMSG_EXIT)
+
+    go Core.Run().(func(string))("A Demo Task")
 
     Core.GManager.Join()
+    Core.GManager.DeleteTask("Demo.Task")
+
     fmt.Println("All task done!")
 }
 
 func (my *MGCore) demoTask(name string) {
     fmt.Println(name)
     for {
-        msg := <-my.GQueue          // OR use my.DeQueue()/my.DeQueueSync()
+        msg := <-my.GQueue // OR use my.DeQueue()/my.DeQueueSync()
         switch tmsg := msg.(type) {
         case string:
             switch tmsg {
