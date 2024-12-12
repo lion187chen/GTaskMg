@@ -46,8 +46,8 @@ func (obj *GManager) DeleteTask(name string) {
 	}
 }
 
-func (obj *GManager) CreateTask(name string, qsize int) *GTask {
-	t := new(GTask).Init(obj, name, qsize)
+func (obj *GManager) CreateTask(runner interface{}, name string, qsize int) *GTask {
+	t := new(GTask).Init(runner, name, obj, qsize)
 	return t
 }
 
