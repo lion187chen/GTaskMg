@@ -5,23 +5,23 @@ import (
 )
 
 type GTask struct {
-	runner interface{}
-	name   string
 	GQueue
 	sync.WaitGroup
-	*GManager
+	runner  interface{}
+	name    string
+	manager *GManager
 }
 
 func (obj *GTask) Init(runner interface{}, name string, manager *GManager, qsize int) *GTask {
 	obj.runner = runner
 	obj.name = name
-	obj.GManager = manager
+	obj.manager = manager
 	obj.GQueue.Init(qsize)
-	if obj.GManager != nil {
+	if obj.manager != nil {
 		// 注册 Task。
-		obj.GManager.RegistTask(obj, name)
+		obj.manager.RegistTask(obj, name)
 		// 注册默认队列。
-		obj.GManager.RegistQueue(obj.GQueue, name)
+		obj.manager.RegistQueue(obj.GQueue, name)
 		return obj
 	}
 	return nil
@@ -41,16 +41,16 @@ func (obj *GTask) Name() string {
 }
 
 func (obj *GTask) Enter() {
-	if obj.GManager != nil {
-		obj.GManager.Enter()
+	if obj.manager != nil {
+		obj.manager.Enter()
 	}
 	obj.WaitGroup.Add(1)
 }
 
 func (obj *GTask) Exit() {
 	obj.WaitGroup.Done()
-	if obj.GManager != nil {
-		obj.GManager.Exit()
+	if obj.manager != nil {
+		obj.manager.Exit()
 	}
 }
 
